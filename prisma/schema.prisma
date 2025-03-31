@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum centerStatus {
+  ACTIVE
+  PENDING
+  DECLARED
+}
+
+enum teacherStatus {
+  ACTIVE
+  PENDING
+  DECLARED
+}
+
+enum reading_bloc_name {
+  PART1
+  PART2
+  PART3
+}
+
+enum writing_bloc_name {
+  TASK1
+  TASK2
+}
+
+enum speaking_bloc_name {
+  TASK1
+  TASK2
+}
+
+enum reading_bloc_type {
+  MULTIPLE_CHOICE
+  TRUE_FALSE_NOT_GIVEN
+  YES_NO_NOT_GIVEN
+  MATCHING_HEADINGS
+  MATCHING_INFORMATION
+  MATCHING_FEATURES
+  MATCHING_SENTENCE_ENDINGS
+  SENTENCE_COMPLETION
+  SUMMARY_COMPLETION
+  NOTE_COMPLETION
+  DIAGRAM_LABEL_COMPLETION
+  SHORT_ANSWER
+  LIST_SELECTION
+  GLOBAL_MULTIPLE_CHOICE
+}
+
+model Region {
+  id     String   @id @default(uuid())
+  name   String
+  Center Center[]
+}
+
+model Center {
+  id         String       @id @default(uuid())
+  name       String
+  document   String
+  location   String
+  regionId   String
+  region     Region       @relation(fields: [regionId], references: [id])
+  image      String
+  password   String
+  email      String
+  status     centerStatus @default(PENDING)
+  role String       @default("CENTER")
+  Teachers   Teachers[]
+}
+
+model Teachers {
+  id          String        @id @default(uuid())
+  name        String
+  email       String
+  password    String
+  phone       String
+  sertificate String
+  status      teacherStatus   @default(PENDING)
+  image       String
+  role String       @default("TEACHER")
+  centerId    String
+  center      Center        @relation(fields: [centerId], references: [id])
+
+  teacher        Group[]  @relation("teacher")
+  cheakerTeacher Group[]  @relation("cheakerTeacher")
+  Result         Result[]
+}
+
+model Group {
+  id               String    @id @default(uuid())
+  name             String
+  teacherId        String
+  teacher          Teachers  @relation(fields: [teacherId], references: [id], name: "teacher")
+  startTime        DateTime
+  endTime          DateTime
+  cheekerTeacherId String
+  cheekerTeacher   Teachers? @relation(fields: [cheekerTeacherId], references: [id], name: "cheakerTeacher")
+  Student          Student[]
+}
+
+model Student {
+  id       String @id @default(uuid())
+  fullName String
+  phone    String
+  password String
+  role String       @default("STUDENT")
+  groupId  String
+  group    Group  @relation(fields: [groupId], references: [id])
+  Exam     Exam[]
+}
+
+model Reading_Variant {
+  id           String         @id @default(uuid())
+  readingName  String
+  isReady      Boolean        @default(false)
+  Reading_Bloc Reading_Bloc[]
+  Exam         Exam[]
+}
+
+model Reading_Bloc {
+  id                String              @id @default(uuid())
+  blocName          reading_bloc_name
+  text              String
+  reading_variantId String
+  reading_variant   Reading_Variant     @relation(fields: [reading_variantId], references: [id])
+  Reading_Bloc_Qeus Reading_Bloc_Qeus[]
+}
+
+model Reading_Bloc_Qeus {
+  id             String            @id @default(uuid())
+  description    String
+  type           reading_bloc_type
+  reading_blocId String
+  reading_bloc   Reading_Bloc      @relation(fields: [reading_blocId], references: [id])
+  Reading_Quest  Reading_Quest[]
+}
+
+model Reading_Quest {
+  id                  String            @id @default(uuid())
+  question            String
+  options             String[]
+  correct             String
+  questionNumber      Int
+  reading_bloc_quesId String
+  reading_bloc_ques   Reading_Bloc_Qeus @relation(fields: [reading_bloc_quesId], references: [id])
+}
+
+model Exam {
+  id                 String           @id @default(uuid())
+  reading_variantId  String
+  reading_variant    Reading_Variant  @relation(fields: [reading_variantId], references: [id])
+  writing_variantId  String
+  writing_variant    Writing_Var      @relation(fields: [writing_variantId], references: [id])
+  speaking_variantId String
+  speaking_variant   Speaking_Variant @relation(fields: [speaking_variantId], references: [id])
+  studentId          String
+  student            Student          @relation(fields: [studentId], references: [id])
+  result             Result?          @relation()
+}
+
+model Result {
+  id               String   @id @default(uuid()) @unique
+  examId           String   @unique
+  exam             Exam     @relation(fields: [examId], references: [id])
+  readingScore     Int
+  listeningScore   Int
+  speakingScore    Int
+  writingScore     Int
+  cheakerTeacherId String
+  cheakerTeacher   Teachers @relation(fields: [cheakerTeacherId], references: [id])
+  speakingComment  String
+  writingComment   String
+  overall          Int
+}
+
+
+model Writing_Var {
+  id           String         @id @default(uuid())
+  writingName  String
+  isReady      Boolean        @default(false)
+  Writing_Bloc Writing_Bloc[]
+  Exam         Exam[]
+}
+
+model Writing_Bloc {
+  id           String            @id @default(uuid())
+  writingVarId String
+  writingVar   Writing_Var       @relation(fields: [writingVarId], references: [id])
+  taskName     writing_bloc_name
+  Writing_Task Writing_Task[]
+}
+
+model Writing_Task {
+  id             String       @id @default(uuid())
+  description    String
+  task           String
+  image          String
+  writing_blocId String
+  writing_bloc   Writing_Bloc @relation(fields: [writing_blocId], references: [id])
+}
+
+model Speaking_Variant {
+  id            String          @id @default(uuid())
+  speakingName  String
+  isReady       Boolean         @default(false)
+  Speaking_Bloc Speaking_Bloc[]
+  Exam          Exam[]
+}
+
+model Speaking_Bloc {
+  id                 String             @id @default(uuid())
+  taskName           speaking_bloc_name
+  speaking_variantId String
+  spiaking_variant   Speaking_Variant   @relation(fields: [speaking_variantId], references: [id])
+  Speaking_Task      Speaking_Task[]
+}
+
+model Speaking_Task {
+  id              String        @id @default(uuid())
+  description     String
+  task            String
+  image           String
+  speaking_blocId String
+  speaking_bloc   Speaking_Bloc @relation(fields: [speaking_blocId], references: [id])
+}
